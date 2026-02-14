@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"strings"
@@ -12,6 +14,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
+
+//go:embed static/*
+var staticFS embed.FS
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -388,7 +393,8 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.Static("/vendor", "../vendor")
+	vendorContent, _ := fs.Sub(staticFS, "static")
+	e.GET("/vendor/*", echo.WrapHandler(http.StripPrefix("/vendor/", http.FileServer(http.FS(vendorContent)))))
 
 	e.GET("/", handleIndex)
 	e.GET("/actions", handleActions)
